@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.github.animeshtrivedi.EmptyProject</groupId>
-  <artifactId>empty-project</artifactId>
+  <groupId>com.ibm.crail.spark.sql.datasources</groupId>
+  <artifactId>spark-nullio</artifactId>
   <version>1.0</version>
   <name>${project.artifactId}</name>
-  <description>Empty project for Java/Scala</description>
-  <inceptionYear>2016</inceptionYear>
+  <description>Null I/O implementation for Spark SQL</description>
+  <inceptionYear>2017</inceptionYear>
 
   <licenses>
     <license>
@@ -62,6 +62,11 @@
       <version>2.2.4</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_2.11</artifactId>
+      <version>2.1.0</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -115,7 +120,6 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <classpathPrefix>lib/</classpathPrefix>
-              <mainClass>com.github.animeshtrivedi.EmptyProject.Main</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -123,11 +127,6 @@
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <archive>
-            <manifest>
-              <mainClass>com.github.animeshtrivedi.EmptyProject.Main</mainClass>
-            </manifest>
-          </archive>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>

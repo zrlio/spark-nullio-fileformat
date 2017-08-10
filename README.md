@@ -1,61 +1,87 @@
-# mvn-template
-A Java/Scala mixed project template for maven build
+# Spark `nullio` File Format
 
-## How to build and install  
+Spark `nullio` file format is a no-op file format which is used for testing and benchmarking I/O and software cost
+of Spark input/output routines. What does it mean? 
+ 
+   * For output: all data written to `nullio` file format is dicarded. 
+   * For input: it can selectively generate particular schema data on the fly. See Generating Input Data section for more details.  
+
+**Updates**
+  * August 10, 2017: The initial source code release for Spark 2.1. 
+
+## How to compile 
+You can simply clone and compile it as   
 ```bash
  #!/bin/bash 
  set -e 
  MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
- mvn -DskipTests -T 1C  install
+ mvn -DskipTests -T 1C  package
 ```
+If successful, this will give you `spark-nullio-1.0.jar` in the `target` folder. There are two ways to tell Spark about 
+this jar 
 
-or alternatively have a look at `build-install.sh`
+  (1) copy this jar into your Spark's `jar` folder. 
+  (2) copy this jar to a location (lets say `/tmp/spark-nullio-1.0.jar`) and add the location to the spark 
+  config (`conf/spark-defaults.conf`) as 
+   ```bash
+   spark.driver.extraClassPath     /tmp/*
+   spark.executor.extraClassPath   /tmp/*
+   ```
 
-## How to build and execute 
-```bash 
-#!/bin/bash 
-set -e 
-MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
-mvn -T 1C clean compile assembly:single
-```
-or alternatively have a look at `build-with-dependencies.sh`
-
-### If Scala code needs to be compiled first 
-```
-<plugin>
-	<groupId>net.alchim31.maven</groupId>
-	<artifactId>scala-maven-plugin</artifactId>
-	<executions>
-		<execution>
-			<id>scala-compile-first</id>
-			<phase>process-resources</phase>
-			<goals>
-				<goal>add-source</goal>
-				<goal>compile</goal>
-			</goals>
-		</execution>
-		<execution>
-			<id>scala-test-compile</id>
-			<phase>process-test-resources</phase>
-			<goals>
-				<goal>testCompile</goal>
-			</goals>
-		</execution>
-	</executions>
-</plugin>
-```
-http://davidb.github.io/scala-maven-plugin/example_java.html
-
-## Example run
+## How to use Spark `nullio` file format
+Most common usecase of `nullio` is to decouple storage devices from the rest of the Spark I/O code path, and 
+isolate performance and debugging issues in the latter. For example, by measuring the runtime of a benchmark
+that writes to a stable storage (lets says HDFS) and one that just discards (using the `nullio` format), one 
+can calculate how much time is spent in the actual data writing.
+ 
+### For discarding output 
+The general high-level syntax to write a Dataset in Spark (uses DataFrameWriter class[1] ) is 
 ```bash
-$java -jar ./target/empty-project-1.0-jar-with-dependencies.jar 
- Hello World!
- concat arguments =
+scala> daatset.write.format("format").options(...).mode(savemode).save("fileName")
 ```
-```bash 
-$java -jar ./target/empty-project-1.0-jar-with-dependencies.jar -h 
- Hello World!
- concat arguments = -h
- usage: Main
-  -h,--help   show help.
+For example, to write as a parquet file (and overwrite old data [2]) this would look like 
+```bash
+scala> daatset.write.format("parquet").mode(SaveMode.Overwrite).save("/example.parquet")
 ```
+
+Since, `nullio` is not a built in format for Spark, you have to specify the complete class path for format as 
+```bash
+scala> daatset.write.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat").save("/example.nullio")
+```
+and that is it. This way, whatever data was in dataset will be pushed to the `nullio` writer, that will eventually 
+discard all the data. When the writer is closed, it will print some statistics. You can check them in the driver 
+or executor's log. 
+
+[1] https://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.sql.DataFrameWriter
+
+[2] https://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes
+
+### For generating input data
+Generating input data is a bit more evolved. Here you can configure the `nullio` reader to generate specific 
+type of schema data on the fly. There are some schema which are pre-coded, but you can add whatever you like 
+as shown in the next section. 
+
+The general high-level syntax to read input source into a Dataset (sues DataFrameReader[3]) looks something like: 
+```
+scala>spark.read.format("format").options(...).load("filename")
+```
+
+The input path can be configured with following parameters (you can pass them in `options`): 
+  * 
+
+### How to add your own input schema and options 
+  
+## An example run with `sql-benchmarks`
+
+## Contributions
+
+PRs are always welcome. Please fork, and make necessary modifications 
+you propose, and let us know. 
+
+## Contact 
+
+If you have questions or suggestions, feel free to post at:
+
+https://groups.google.com/forum/#!forum/zrlio-users
+
+or email: zrlio-users@googlegroups.com
