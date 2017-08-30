@@ -33,37 +33,46 @@ class NullioOutputWriter (path: String, context: TaskAttemptContext) extends Out
   private val init = System.nanoTime()
   private var start = 0L
   private var itemsInternalRow:Long = 0L
+  private var itemsRow:Long = 0L
 
   override def close(): Unit = {
-    val end = System.nanoTime()
-    val str = if(this.itemsInternalRow == 0) {
-      /* if zero then we can just calculate the init time, all other entries are zero */
-      start = System.nanoTime()
-      "closing Atr(Null)OutputWriter. " +
-        "initPause: " + (start - init).toFloat/1000 + " usec " +
-        " runTime: " + 0 + " usec " +
-        " #InternalRow: " + this.itemsInternalRow +
-        " time/row: " + 0 + " nsec"
+    val tx = System.nanoTime() - start
+    val timePerRow = if(this.itemsRow == 0){
+      0
     } else {
-      /* sensible calculation of numbers when we have processed more then  1 entries */
-      val tx = end - start
-      "closing Atr(Null)OutputWriter. " +
-        "initPause: " + (start - init).toFloat/1000 + " usec " +
+      tx/this.itemsRow
+    }
+    val timePerInternalRow = if(this.itemsInternalRow == 0){
+      0
+    } else {
+      tx/this.itemsInternalRow
+    }
+
+    val str = "closing Spark(Nullio)OutputWriter. " +
+        "init-to-write: " + (start - init).toFloat/1000 + " usec " +
         " runTime: " + tx.toFloat/1000 + " usec " +
         " #InternalRow: " + this.itemsInternalRow +
-        " time/row: " + tx/this.itemsInternalRow + " nsec"
-    }
+        " #Rows: " + this.itemsRow +
+        " time/Internalrow: " + timePerInternalRow + " nsec" +
+        " time/Row: " + timePerRow + " nsec"
     /* print the string */
     System.err.println(str)
   }
 
   override def write(row: Row): Unit = {
-    if(this.itemsInternalRow == 0) {
+    if(start == 0) {
+      start = System.nanoTime()
+      //new Exception("First Row writer, stack below").printStackTrace()
+    }
+    this.itemsRow+=1
+  }
+
+  override def writeInternal(row: InternalRow): Unit = {
+    if(start == 0) {
       start = System.nanoTime()
       //new Exception("First Row writer, stack below").printStackTrace()
     }
     this.itemsInternalRow+=1
   }
 
-  override def writeInternal(row: InternalRow): Unit = {}
 }

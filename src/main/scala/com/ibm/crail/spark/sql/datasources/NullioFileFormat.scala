@@ -88,8 +88,10 @@ class NullioFileFormat extends FileFormat with DataSourceRegister with Serializa
     val schString = options.getOrElse("schema", "ParquetExample")
     schema = if(schString.compareToIgnoreCase("ParquetExample") == 0) {
       ParquetExampleSchema
-    } else {
+    } else if (schString.compareToIgnoreCase("IntWithPayload") == 0) {
       IntWithPayloadSchema
+    } else {
+      throw new Exception("Illegal schema, perhaps not yet implemented")
     }
     Some(schema.getSchema)
   }
@@ -154,6 +156,7 @@ class NullioFileFormat extends FileFormat with DataSourceRegister with Serializa
      */
       val generator = schema match {
         case ParquetExampleSchema => new ParquetExampleGenerator(payloadSize, intRange)
+        case IntWithPayloadSchema => new IntWithPayloadSchema(payloadSize, intRange)
         case _ => throw new Exception("Not implemented yet")
       }
       new Iterator[InternalRow] {

@@ -21,21 +21,49 @@
 
 package com.ibm.crail.spark.sql.datasources.schema
 
-import com.ibm.crail.spark.sql.datasources.NullioDataSchema
-import org.apache.spark.sql.types.{IntegerType, StructType}
+import com.ibm.crail.spark.sql.datasources.{NullioDataSchema, RowGenerator}
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
+import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, UnsafeRowWriter}
+import org.apache.spark.sql.types.{BinaryType, IntegerType, StructType}
+import org.apache.spark.unsafe.types.UTF8String
+
+import scala.util.Random
 
 /**
   * Created by atr on 10.08.17.
   */
 case object IntWithPayloadSchema extends NullioDataSchema with Serializable {
   /* series of ints */
-  override val numFields = 1
+  override val numFields = 2
 
+  // same in the parquet-generator
+  // https://github.com/zrlio/parquet-generator/blob/master/src/main/scala/com/ibm/crail/spark/tools/schema/IntWithPayload.scala
+  // case class IntWithPayload(intKey: Int, payload: Array[Byte])
   override def getSchema: StructType = {
-    new StructType().add("randInt", IntegerType)
+    new StructType().add("intKey", IntegerType).
+      add("payload", BinaryType)
   }
 }
 
-class IntWithPayloadSchema {
+class IntWithPayloadSchema (maxSize: Int, intRange: Int) extends RowGenerator {
 
+  private val random = new Random(System.nanoTime())
+  private val unsafeRow = new UnsafeRow(ParquetExampleSchema.numFields)
+  private val bufferHolder = new BufferHolder(unsafeRow)
+  private val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, ParquetExampleSchema.numFields)
+
+  private val byteArray = new Array[Byte](maxSize)
+  random.nextBytes(byteArray)
+
+  override def nextRow(): UnsafeRow = {
+    /* we write it once here */
+    bufferHolder.reset()
+    /* we are here anyways why not reset the key */
+    unsafeRowWriter.write(0, random.nextInt(intRange))
+    /* flip a byte in the array somewhere */
+    byteArray(random.nextInt(maxSize)) = random.nextInt().toByte
+    unsafeRowWriter.write(1, byteArray)
+    unsafeRow.setTotalSize(bufferHolder.totalSize())
+    unsafeRow
+  }
 }

@@ -57,7 +57,7 @@ or executor's log.
 [2] https://spark.apache.org/docs/latest/sql-programming-guide.html#save-modes
 
 ### For generating input data
-Generating input data is a bit more evolved. Here you can configure the `nullio` reader to generate specific 
+Generating input data is a bit more involved. Here you can configure the `nullio` reader to generate specific 
 type of schema data on the fly. There are some schema which are pre-coded, but you can add whatever you like 
 as shown in the next section. 
 
@@ -67,9 +67,22 @@ scala>spark.read.format("format").options(...).load("filename")
 ```
 
 The input path can be configured with following parameters (you can pass them in `options`): 
-  * 
+  * inputrows : Number of input rows per task  (default: 1000)
+  * payloadsize : size of any variable payload (default: 32 bytes)
+  * intrange : the range of the integers to control the data distribution. (default: INT_MAX)
+  * schema : the data schema. There are currently 3 options: (i) IntWithPayload <intKey:Int, payload:Array[Byte]>; 
+  (ii) ParquetExample<intKey:Int, randLong: Long, randDouble: Double, randFloat: Float, randString: String>;
+   (iii) NullSchema (NYI).
+
+**Current limitation:** Currently, I do not have a sensible way to control the number of partitions/splits. Hence, 
+the current code expects that you will pass a sensible "filename". The rest of the spark mechaniary use that 
+calculate number of tasks to launch. So for example, if reading your parquet file generated 83 tasks, then 
+ just changing the format type to `NullioFileFormat` will still generate 83 tasks but the generated data will 
+ be what you set in the options. (see above)
 
 ### How to add your own input schema and options 
+In order to add your schema, please have a look into `./schema/` examples. You just have to define number of fields, 
+  schema, and convert your data into InternalRows using UnsafeWriters. 
   
 ## An example run with `sql-benchmarks`
 
