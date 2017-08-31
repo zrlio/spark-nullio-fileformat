@@ -82,10 +82,8 @@ calculate number of tasks to launch. So for example, if reading your parquet fil
 
 ### How to add your own input schema and options 
 In order to add your schema, please have a look into `./schema/` examples. You just have to define number of fields, 
-  schema, and convert your data into InternalRows using UnsafeWriters. 
+schema, and convert your data into InternalRows using UnsafeWriters. 
   
-## An example run with `sql-benchmarks`
-
 ## Contributions
 
 PRs are always welcome. Please fork, and make necessary modifications 
