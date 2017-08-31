@@ -83,7 +83,40 @@ calculate number of tasks to launch. So for example, if reading your parquet fil
 ### How to add your own input schema and options 
 In order to add your schema, please have a look into `./schema/` examples. You just have to define number of fields, 
 schema, and convert your data into InternalRows using UnsafeWriters. 
-  
+
+## Example usage 
+### Reading data from a parquet file and discarding it 
+```bash
+scala> val inputData = spark.read.format("parquet").load("/sampleParquet")
+...
+inputdata: org.apache.spark.sql.DataFrame = ...
+scala> inputData.write.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat").save("/empty") 
+...
+```
+Here in the executor log's (or in the dirver's log, depending upon your setting) you might see a line like this 
+```bash
+closing Spark(Nullio)OutputWriter. init-to-write: 489947.3 usec  runTime: 425123.88 usec  #InternalRow: 1440202 #Rows: 0 time/Internalrow: 295 nsec time/Row: 0 nsec
+```
+This shows that this particular writer was asked to write 1440202 `InternalRows` which it discarded. 
+
+### Reading data from `nullio` reader and saving it  
+We will generate 1001 rows (per executor) of `IntWithPayload` schema with 63 bytes of payload. 
+```bash
+scala> val inputData = spark.read.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat")
+   .option("inputrows", "1001")
+   .option("payloadsize", "63")
+   .option("schema","intwithpayload")
+   .load("/sampleParquet")
+   
+inputData: org.apache.spark.sql.DataFrame = [intKey: int, payload: binary]
+scala> inputData.write.parquet.save("/abc.parquet")
+...
+scala> spark.read.parquet("file:/data/abc").count 
+...
+res0: Long = 2002
+```
+2002 is good, as I have 2 executors. 
+
 ## Contributions
 
 PRs are always welcome. Please fork, and make necessary modifications 
