@@ -3,10 +3,12 @@
 Spark `nullio` file format is a no-op file format which is used for testing and benchmarking I/O and software cost
 of Spark input/output routines. What does it mean? 
  
-   * For output: all data written to `nullio` file format is dicarded. 
+   * For output: all data written to `nullio` file format is discarded. 
    * For input: it can selectively generate particular schema data on the fly. See Generating Input Data section for more details.  
 
 **Updates**
+  * September 21, 2017: The build is moved from Spark `2.1` to `2.2`. 
+  * September 21, 2017: Package rename from `com.ibm.crail.spark.sql.datasources` to `org.apache.spark.sql`
   * August 10, 2017: The initial source code release for Spark 2.1. 
 
 ## How to compile 
@@ -46,7 +48,7 @@ scala> daatset.write.format("parquet").mode(SaveMode.Overwrite).save("/example.p
 
 Since, `nullio` is not a built in format for Spark, you have to specify the complete class path for format as 
 ```bash
-scala> daatset.write.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat").save("/example.nullio")
+scala> daatset.write.format("org.apache.spark.sql.NullFileFormat").save("/example.nullio")
 ```
 and that is it. This way, whatever data was in dataset will be pushed to the `nullio` writer, that will eventually 
 discard all the data. When the writer is closed, it will print some statistics. You can check them in the driver 
@@ -77,7 +79,7 @@ The input path can be configured with following parameters (you can pass them in
 **Current limitation:** Currently, I do not have a sensible way to control the number of partitions/splits. Hence, 
 the current code expects that you will pass a sensible "filename". The rest of the spark mechaniary use that 
 calculate number of tasks to launch. So for example, if reading your parquet file generated 83 tasks, then 
- just changing the format type to `NullioFileFormat` will still generate 83 tasks but the generated data will 
+ just changing the format type to `NullFileFormat` will still generate 83 tasks but the generated data will 
  be what you set in the options. (see above)
 
 ### How to add your own input schema and options 
@@ -90,7 +92,7 @@ schema, and convert your data into InternalRows using UnsafeWriters.
 scala> val inputData = spark.read.format("parquet").load("/sampleParquet")
 ...
 inputdata: org.apache.spark.sql.DataFrame = ...
-scala> inputData.write.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat").save("/empty") 
+scala> inputData.write.format("org.apache.spark.sql.NullFileFormat").save("/empty") 
 ...
 ```
 Here in the executor log's (or in the dirver's log, depending upon your setting) you might see a line like this 
@@ -102,7 +104,7 @@ This shows that this particular writer was asked to write 1440202 `InternalRows`
 ### Reading data from `nullio` reader and saving it  
 We will generate 1001 rows (per executor) of `IntWithPayload` schema with 63 bytes of payload. 
 ```bash
-scala> val inputData = spark.read.format("com.ibm.crail.spark.sql.datasources.NullioFileFormat")
+scala> val inputData = spark.read.format("org.apache.spark.sql.NullFileFormat")
    .option("inputrows", "1001")
    .option("payloadsize", "63")
    .option("schema","intwithpayload")
