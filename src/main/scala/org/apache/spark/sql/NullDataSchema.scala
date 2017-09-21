@@ -1,5 +1,5 @@
 /*
- * spark-nullio file format
+ * spark null file format
  *
  * Author: Animesh Trivedi <atr@zurich.ibm.com>
  *
@@ -19,14 +19,14 @@
  *
  */
 
-package com.ibm.crail.spark.sql.datasources
+package org.apache.spark.sql
 
 import org.apache.spark.sql.types.StructType
 
 /**
   * Created by atr on 10.08.17.
   */
-trait NullioDataSchema {
+trait NullDataSchema {
   def getSchema: StructType
   def numFields:Int
 }

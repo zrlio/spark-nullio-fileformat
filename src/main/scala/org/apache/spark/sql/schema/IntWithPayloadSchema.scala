@@ -1,5 +1,5 @@
 /*
- * spark-nullio file format
+ * spark null file format
  *
  * Author: Animesh Trivedi <atr@zurich.ibm.com>
  *
@@ -19,19 +19,19 @@
  *
  */
 
-package com.ibm.crail.spark.sql.datasources.schema
+package org.apache.spark.sql.schema
 
-import com.ibm.crail.spark.sql.datasources.{NullioDataSchema, RowGenerator}
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, UnsafeRowWriter}
 import org.apache.spark.sql.types.{BinaryType, IntegerType, StructType}
+import org.apache.spark.sql.{NullDataSchema, RowGenerator}
 
 import scala.util.Random
 
 /**
   * Created by atr on 10.08.17.
   */
-case object IntWithPayloadSchema extends NullioDataSchema with Serializable {
+case object IntWithPayloadSchema extends NullDataSchema with Serializable {
   /* series of ints */
   override val numFields = 2
 

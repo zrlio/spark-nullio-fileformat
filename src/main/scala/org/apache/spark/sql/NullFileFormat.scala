@@ -1,5 +1,5 @@
 /*
- * spark-nullio file format
+ * spark null file format
  *
  * Author: Animesh Trivedi <atr@zurich.ibm.com>
  *
@@ -19,20 +19,19 @@
  *
  */
 
-package com.ibm.crail.spark.sql.datasources
+package org.apache.spark.sql
 
-import com.ibm.crail.spark.sql.datasources.schema.{IntWithPayloadSchema, ParquetExampleGenerator, ParquetExampleSchema}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
 import org.apache.hadoop.mapreduce.{Job, TaskAttemptContext}
 import org.apache.spark.SparkEnv
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.{FileFormat, OutputWriter, OutputWriterFactory, PartitionedFile}
+import org.apache.spark.sql.schema.{IntWithPayloadSchema, ParquetExampleGenerator, ParquetExampleSchema}
 import org.apache.spark.sql.sources.{DataSourceRegister, Filter}
 import org.apache.spark.sql.types._
 
-object NullioFileFormat {
+object NullFileFormat {
   val KEY_INPUT_ROWS = "inputrows"
   val KEY_PAYLOAD_SIZE = "payloadsize"
   val KEY_INT_RANGE = "intrange"
@@ -45,11 +44,11 @@ object NullioFileFormat {
     KEY_PATH)
 }
 
-class NullioFileFormat extends FileFormat with DataSourceRegister with Serializable {
+class NullFileFormat extends FileFormat with DataSourceRegister with Serializable {
 
-  private var schema:NullioDataSchema = _
+  private var schema:NullDataSchema = _
   /* yes, it is splitable */
-  private val splitable = SparkEnv.get.conf.getBoolean("spark.sql.input.NullioFileFormat.splitable", true)
+  private val splitable = SparkEnv.get.conf.getBoolean("org.apache.spark.sql.NullFileFormat.splitable", true)
 
   override def shortName(): String = "nullio"
 
@@ -65,8 +64,8 @@ class NullioFileFormat extends FileFormat with DataSourceRegister with Serializa
                                 path: String,
                                 dataSchema: StructType,
                                 context: TaskAttemptContext): OutputWriter = {
-        System.err.println("allocating a new NullioOutputWriter to file: " + path)
-        new NullioOutputWriter(path, context)
+        System.err.println("allocating a new NullOutputWriter to file: " + path)
+        new NullOutputWriter(path, context)
       }
 
       override def getFileExtension(context: TaskAttemptContext): String = {
@@ -107,23 +106,23 @@ class NullioFileFormat extends FileFormat with DataSourceRegister with Serializa
     System.err.println(" ----- Null Source/Sink options (all lower caps) ----- ")
     for (o <- options){
       System.err.println(" " + o._1 + " : " + o._2)
-      if(!NullioFileFormat.validKeys.contains(o._1.toLowerCase)){
+      if(!NullFileFormat.validKeys.contains(o._1.toLowerCase)){
         throw new Exception("Illegal option : " + o._1 +
-          " , valid options are: " + NullioFileFormat.validKeys)
+          " , valid options are: " + NullFileFormat.validKeys)
       }
     }
     System.err.println(" ------------------------------------ ")
     /* we first must parse out params from the options */
-    val inputRows = options.getOrElse(NullioFileFormat.KEY_INPUT_ROWS,
+    val inputRows = options.getOrElse(NullFileFormat.KEY_INPUT_ROWS,
       "1000").toLong
-    val sch = options.getOrElse(NullioFileFormat.KEY_SCHEMA, "ParquetExample")
-    val payloadSize = options.getOrElse(NullioFileFormat.KEY_PAYLOAD_SIZE,
+    val sch = options.getOrElse(NullFileFormat.KEY_SCHEMA, "ParquetExample")
+    val payloadSize = options.getOrElse(NullFileFormat.KEY_PAYLOAD_SIZE,
       "32").toInt
-    val intRange = options.getOrElse(NullioFileFormat.KEY_INT_RANGE,
+    val intRange = options.getOrElse(NullFileFormat.KEY_INT_RANGE,
       Integer.MAX_VALUE.toString).toInt
 
     System.err.println("###########################################################")
-    System.err.println("NullioFileReader: schema " + requiredSchema +
+    System.err.println("NullFileReader: schema " + requiredSchema +
       " inputRows: " + inputRows +
       " intRange: " + intRange +
       " payloadSize: " + payloadSize)
@@ -134,8 +133,8 @@ class NullioFileFormat extends FileFormat with DataSourceRegister with Serializa
       become part of the clousre and they are not serializable. You will get something like:
       Serialization stack:
       - object not serializable (class: com.ibm.crail.spark.sql.datasources.schema.ParquetExampleGenerator, value: com.ibm.crail.spark.sql.datasources.schema.ParquetExampleGenerator@56929c5b)
-      - field (class: com.ibm.crail.spark.sql.datasources.NullioFileFormat$$anonfun$buildReader$2, name: generator$1, type: class com.ibm.crail.spark.sql.datasources.schema.ParquetExampleGenerator)
-      - object (class com.ibm.crail.spark.sql.datasources.NullioFileFormat$$anonfun$buildReader$2, <function1>)
+      - field (class: com.ibm.crail.spark.sql.datasources.NullFileFormat$$anonfun$buildReader$2, name: generator$1, type: class com.ibm.crail.spark.sql.datasources.schema.ParquetExampleGenerator)
+      - object (class com.ibm.crail.spark.sql.datasources.NullFileFormat$$anonfun$buildReader$2, <function1>)
       - field (class: org.apache.spark.sql.execution.datasources.FileFormat$$anon$1, name: dataReader$1, type: interface scala.Function1)
       - object (class org.apache.spark.sql.execution.datasources.FileFormat$$anon$1, <function1>)
       - field (class: org.apache.spark.sql.execution.datasources.FileScanRDD, name: org$apache$spark$sql$execution$datasources$FileScanRDD$$readFunction, type: interface scala.Function1)

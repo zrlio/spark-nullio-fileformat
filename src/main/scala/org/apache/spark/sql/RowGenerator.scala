@@ -1,5 +1,5 @@
 /*
- * spark-nullio file format
+ * spark null file format
  *
  * Author: Animesh Trivedi <atr@zurich.ibm.com>
  *
@@ -19,7 +19,7 @@
  *
  */
 
-package com.ibm.crail.spark.sql.datasources
+package org.apache.spark.sql
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 

@@ -1,5 +1,5 @@
 /*
- * spark-nullio file format
+ * spark null file format
  *
  * Author: Animesh Trivedi <atr@zurich.ibm.com>
  *
@@ -19,17 +19,16 @@
  *
  */
 
-package com.ibm.crail.spark.sql.datasources
+package org.apache.spark.sql
 
 import org.apache.hadoop.mapreduce.TaskAttemptContext
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.OutputWriter
 
 /**
   * Created by atr on 10.08.17.
   */
-class NullioOutputWriter (path: String, context: TaskAttemptContext) extends OutputWriter {
+class NullOutputWriter(path: String, context: TaskAttemptContext) extends OutputWriter {
   private val init = System.nanoTime()
   private var start = 0L
   private var itemsInternalRow:Long = 0L
@@ -48,7 +47,7 @@ class NullioOutputWriter (path: String, context: TaskAttemptContext) extends Out
       tx/this.itemsInternalRow
     }
 
-    val str = "closing Spark(Nullio)OutputWriter. " +
+    val str = "closing Spark NullOutputWriter. " +
         "init-to-write: " + (start - init).toFloat/1000 + " usec " +
         " runTime: " + tx.toFloat/1000 + " usec " +
         " #InternalRow: " + this.itemsInternalRow +
@@ -59,15 +58,7 @@ class NullioOutputWriter (path: String, context: TaskAttemptContext) extends Out
     System.err.println(str)
   }
 
-  override def write(row: Row): Unit = {
-    if(start == 0) {
-      start = System.nanoTime()
-      //new Exception("First Row writer, stack below").printStackTrace()
-    }
-    this.itemsRow+=1
-  }
-
-  override def writeInternal(row: InternalRow): Unit = {
+  override def write(row: InternalRow): Unit = {
     if(start == 0) {
       start = System.nanoTime()
       //new Exception("First Row writer, stack below").printStackTrace()
