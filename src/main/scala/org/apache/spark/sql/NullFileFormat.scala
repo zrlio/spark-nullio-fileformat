@@ -169,4 +169,57 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
       }
     }
   }
+
+  def buildIterator(options: Map[String, String]): Iterator[InternalRow] = {
+
+    System.err.println(" ----- Null Source/Sink options (all lower caps) ----- ")
+    for (o <- options){
+      System.err.println(" " + o._1 + " : " + o._2)
+      if(!NullFileFormat.validKeys.contains(o._1.toLowerCase)){
+        throw new Exception("Illegal option : " + o._1 +
+          " , valid options are: " + NullFileFormat.validKeys)
+      }
+    }
+    System.err.println(" ------------------------------------ ")
+    /* we first must parse out params from the options */
+    val inputRows = options.getOrElse(NullFileFormat.KEY_INPUT_ROWS,
+      "1000").toLong
+    val sch = options.getOrElse(NullFileFormat.KEY_SCHEMA, "ParquetExample")
+    val payloadSize = options.getOrElse(NullFileFormat.KEY_PAYLOAD_SIZE,
+      "32").toInt
+    val intRange = options.getOrElse(NullFileFormat.KEY_INT_RANGE,
+      Integer.MAX_VALUE.toString).toInt
+
+    System.err.println("###########################################################")
+    System.err.println("NullFileReader: inputRows: " + inputRows +
+      " intRange: " + intRange +
+      " payloadSize: " + payloadSize)
+    System.err.println("###########################################################")
+
+    val generator = schema match {
+      case ParquetExampleSchema => new ParquetExampleGenerator(payloadSize, intRange)
+      case IntWithPayloadSchema => new IntWithPayloadSchema(payloadSize, intRange)
+      case _ => throw new Exception("Not implemented yet")
+    }
+    new Iterator[InternalRow] {
+      private var soFar = 0L
+      override def hasNext: Boolean = soFar < inputRows
+      override def next(): InternalRow = {
+        soFar+=1
+        generator.nextRow()
+      }
+    }
+  }
+
+  def setSchema(options: Map[String, String]): Option[StructType] = {
+    val schString = options.getOrElse("schema", "ParquetExample")
+    schema = if(schString.compareToIgnoreCase("ParquetExample") == 0) {
+      ParquetExampleSchema
+    } else if (schString.compareToIgnoreCase("IntWithPayload") == 0) {
+      IntWithPayloadSchema
+    } else {
+      throw new Exception("Illegal schema, perhaps not yet implemented")
+    }
+    Some(schema.getSchema)
+  }
 }
