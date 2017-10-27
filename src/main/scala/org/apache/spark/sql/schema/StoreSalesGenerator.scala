@@ -1,5 +1,6 @@
 package org.apache.spark.sql.schema
 
+import java.nio.ByteBuffer
 import java.util.Random
 
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
@@ -76,41 +77,50 @@ case object StoreSalesSchema extends NullDataSchema with Serializable {
   // DecimalType(7, 2) gives defaultSize as 8
 }
 
-class StoreSalesGenerator() extends RowGenerator{
+class StoreSalesGenerator(bufferSize:Int) extends RowGenerator{
   private val random = new Random(System.nanoTime())
   private val unsafeRow = new UnsafeRow(StoreSalesSchema.numFields)
   private val bufferHolder = new BufferHolder(unsafeRow)
   private val unsafeRowWriter = new UnsafeRowWriter(bufferHolder, StoreSalesSchema.numFields)
+  private val bb = new Array[Byte](bufferSize)
+  random.nextBytes(bb)
+  private val bbx = ByteBuffer.wrap(bb)
+
 
   def nextRow():UnsafeRow = {
     /* we write it once here */
     bufferHolder.reset()
-    unsafeRowWriter.write(0, 42)
-    unsafeRowWriter.write(1, 42)
-    unsafeRowWriter.write(2, 42)
-    unsafeRowWriter.write(3, 42)
-    unsafeRowWriter.write(4, 42)
-    unsafeRowWriter.write(5, 42)
-    unsafeRowWriter.write(6, 42)
-    unsafeRowWriter.write(7, 42)
-    unsafeRowWriter.write(8, 42)
+    var idx = random.nextInt(bufferSize - 8)
+    val intV = bbx.getInt(idx)
+    val longV = bbx.getLong(idx)
+    val doubleV = bbx.getDouble(idx)
+
+    unsafeRowWriter.write(0, intV)
+    unsafeRowWriter.write(1, intV)
+    unsafeRowWriter.write(2, intV)
+    unsafeRowWriter.write(3, intV)
+    unsafeRowWriter.write(4, intV)
+    unsafeRowWriter.write(5, intV)
+    unsafeRowWriter.write(6, intV)
+    unsafeRowWriter.write(7, intV)
+    unsafeRowWriter.write(8, intV)
     // +9 ints
-    unsafeRowWriter.write(9, 42L)
+    unsafeRowWriter.write(9, longV)
     // +9 ints + 1 long
-    unsafeRowWriter.write(10, 42)
+    unsafeRowWriter.write(10, intV)
     // +9 ints + 1 long + 1 int
-    unsafeRowWriter.write(11, 3.14d)
-    unsafeRowWriter.write(12, 3.14d)
-    unsafeRowWriter.write(13, 3.14d)
-    unsafeRowWriter.write(14, 3.14d)
-    unsafeRowWriter.write(15, 3.14d)
-    unsafeRowWriter.write(16, 3.14d)
-    unsafeRowWriter.write(17, 3.14d)
-    unsafeRowWriter.write(18, 3.14d)
-    unsafeRowWriter.write(19, 3.14d)
-    unsafeRowWriter.write(20, 3.14d)
-    unsafeRowWriter.write(21, 3.14d)
-    unsafeRowWriter.write(22, 3.14d)
+    unsafeRowWriter.write(11, doubleV)
+    unsafeRowWriter.write(12, doubleV)
+    unsafeRowWriter.write(13, doubleV)
+    unsafeRowWriter.write(14, doubleV)
+    unsafeRowWriter.write(15, doubleV)
+    unsafeRowWriter.write(16, doubleV)
+    unsafeRowWriter.write(17, doubleV)
+    unsafeRowWriter.write(18, doubleV)
+    unsafeRowWriter.write(19, doubleV)
+    unsafeRowWriter.write(20, doubleV)
+    unsafeRowWriter.write(21, doubleV)
+    unsafeRowWriter.write(22, doubleV)
     // +9 ints + 1 long + 1 int + 12 double = 23 fields
 
     unsafeRow.setTotalSize(bufferHolder.totalSize())

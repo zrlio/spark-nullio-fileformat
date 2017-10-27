@@ -36,10 +36,12 @@ object NullFileFormat {
   val KEY_PAYLOAD_SIZE = "payloadsize"
   val KEY_INT_RANGE = "intrange"
   val KEY_SCHEMA = "schema"
+  val KEY_ROW_BUFFER_SZ = "rowbuffersz"
   val validKeys = Set(KEY_INPUT_ROWS,
     KEY_PAYLOAD_SIZE,
     KEY_INT_RANGE,
-    KEY_SCHEMA)
+    KEY_SCHEMA,
+    KEY_ROW_BUFFER_SZ)
 }
 
 class NullFileFormat extends FileFormat with DataSourceRegister with Serializable {
@@ -189,6 +191,9 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
       "32").toInt
     val intRange = options.getOrElse(NullFileFormat.KEY_INT_RANGE,
       Integer.MAX_VALUE.toString).toInt
+    val bufferSize = options.getOrElse(NullFileFormat.KEY_ROW_BUFFER_SZ,
+      "1024").toInt
+    require(bufferSize >=16, " bufferSize must be greater than 16 bytes, current " + bufferSize)
 
     System.err.println("###########################################################")
     System.err.println("NullFileReader: inputRows: " + inputRows +
@@ -199,7 +204,7 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
     val generator = schema match {
       case ParquetExampleSchema => new ParquetExampleGenerator(payloadSize, intRange)
       case IntWithPayloadSchema => new IntWithPayloadSchema(payloadSize, intRange)
-      case StoreSalesSchema => new StoreSalesGenerator()
+      case StoreSalesSchema => new StoreSalesGenerator(bufferSize)
       case _ => throw new Exception("Not implemented yet")
     }
     new Iterator[InternalRow] {
