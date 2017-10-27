@@ -35,6 +35,9 @@ case object IntWithPayloadSchema extends NullDataSchema with Serializable {
   /* series of ints */
   override val numFields = 2
 
+  def getFixedSizeBytes:Long = Integer.BYTES // a single int
+  def numVariableFields:Long = 1L // a single variable field
+
   // same in the parquet-generator
   // https://github.com/zrlio/parquet-generator/blob/master/src/main/scala/com/ibm/crail/spark/tools/schema/IntWithPayload.scala
   // case class IntWithPayload(intKey: Int, payload: Array[Byte])

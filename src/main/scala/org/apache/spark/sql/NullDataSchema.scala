@@ -29,4 +29,6 @@ import org.apache.spark.sql.types.StructType
 trait NullDataSchema {
   def getSchema: StructType
   def numFields:Int
+  def getFixedSizeBytes:Long
+  def numVariableFields:Long
 }

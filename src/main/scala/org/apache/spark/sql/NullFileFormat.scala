@@ -27,7 +27,7 @@ import org.apache.hadoop.mapreduce.{Job, TaskAttemptContext}
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.{FileFormat, OutputWriter, OutputWriterFactory, PartitionedFile}
-import org.apache.spark.sql.schema.{IntWithPayloadSchema, ParquetExampleGenerator, ParquetExampleSchema}
+import org.apache.spark.sql.schema._
 import org.apache.spark.sql.sources.{DataSourceRegister, Filter}
 import org.apache.spark.sql.types._
 
@@ -36,12 +36,10 @@ object NullFileFormat {
   val KEY_PAYLOAD_SIZE = "payloadsize"
   val KEY_INT_RANGE = "intrange"
   val KEY_SCHEMA = "schema"
-  val KEY_PATH = "path"
   val validKeys = Set(KEY_INPUT_ROWS,
     KEY_PAYLOAD_SIZE,
     KEY_INT_RANGE,
-    KEY_SCHEMA,
-    KEY_PATH)
+    KEY_SCHEMA)
 }
 
 class NullFileFormat extends FileFormat with DataSourceRegister with Serializable {
@@ -89,6 +87,8 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
       ParquetExampleSchema
     } else if (schString.compareToIgnoreCase("IntWithPayload") == 0) {
       IntWithPayloadSchema
+    } else if (schString.compareToIgnoreCase("StoreSales") == 0) {
+      StoreSalesSchema
     } else {
       throw new Exception("Illegal schema, perhaps not yet implemented")
     }
@@ -199,6 +199,7 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
     val generator = schema match {
       case ParquetExampleSchema => new ParquetExampleGenerator(payloadSize, intRange)
       case IntWithPayloadSchema => new IntWithPayloadSchema(payloadSize, intRange)
+      case StoreSalesSchema => new StoreSalesGenerator()
       case _ => throw new Exception("Not implemented yet")
     }
     new Iterator[InternalRow] {
@@ -217,9 +218,29 @@ class NullFileFormat extends FileFormat with DataSourceRegister with Serializabl
       ParquetExampleSchema
     } else if (schString.compareToIgnoreCase("IntWithPayload") == 0) {
       IntWithPayloadSchema
+    } else if (schString.compareToIgnoreCase("StoreSales") == 0) {
+      StoreSalesSchema
     } else {
-      throw new Exception("Illegal schema, perhaps not yet implemented")
+      throw new Exception("Illegal schema " + schString + " , perhaps not yet implemented")
     }
     Some(schema.getSchema)
   }
+
+  def getSchemaRowSize(options: Map[String, String]):Long = {
+    if(schema == null){
+      throw new Exception(" schema is not set yet, either callSchema infer or setSchema")
+    }
+    val payloadSize = options.getOrElse(NullFileFormat.KEY_PAYLOAD_SIZE,
+      "32").toInt
+    schema match {
+      case ParquetExampleSchema => ParquetExampleSchema.getFixedSizeBytes + (ParquetExampleSchema.numVariableFields * payloadSize)
+      case IntWithPayloadSchema => IntWithPayloadSchema.getFixedSizeBytes + (IntWithPayloadSchema.numVariableFields * payloadSize)
+      case StoreSalesSchema => StoreSalesSchema.getFixedSizeBytes + (StoreSalesSchema.numVariableFields * payloadSize)
+      case _ => throw new Exception("Not implemented yet")
+    }
+  }
+
+  // FIXME: this all is super ugly. We can fix it by simply prividing an interface that says given this
+  // schema, generate rows. No need to pass these Options[Strings] around. What we need is just an iterator
+  // for a given schema.
 }

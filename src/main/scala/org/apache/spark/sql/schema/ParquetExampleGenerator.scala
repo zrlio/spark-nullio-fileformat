@@ -37,6 +37,9 @@ case object ParquetExampleSchema extends NullDataSchema with Serializable {
   /* from the parquet generator tool, we have this schema that we want to generate  */
   override val numFields = 5
 
+  def getFixedSizeBytes:Long = java.lang.Integer.BYTES + java.lang.Long.BYTES + java.lang.Double.BYTES + java.lang.Float.BYTES
+
+  def numVariableFields:Long = 1L
   // same in the parquet-generator
   // https://github.com/zrlio/parquet-generator/blob/master/src/main/scala/com/ibm/crail/spark/tools/schema/ParquetExample.scala
   // case class ParquetExample(intKey:Int, randLong: Long, randDouble: Double, randFloat: Float, randString: String)
