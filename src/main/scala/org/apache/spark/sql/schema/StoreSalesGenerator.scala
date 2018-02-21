@@ -6,7 +6,7 @@ import java.util.Random
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, UnsafeRowWriter}
 import org.apache.spark.sql.{NullDataSchema, RowGenerator}
-import org.apache.spark.sql.types.{DecimalType, IntegerType, LongType, StructType}
+import org.apache.spark.sql.types._
 
 /**
   * Created by atr on 26.10.17.
@@ -61,18 +61,18 @@ case object StoreSalesSchema extends NullDataSchema with Serializable {
       .add("ss_promo_sk", IntegerType)
       .add("ss_ticket_number", LongType)
       .add("ss_quantity", IntegerType)
-      .add(" ss_wholesale_cost ", DecimalType(7, 2))
-      .add(" ss_list_price ", DecimalType(7, 2))
-      .add(" ss_sales_price ", DecimalType(7, 2))
-      .add(" ss_ext_discount_amt ", DecimalType(7, 2))
-      .add(" ss_ext_sales_price ", DecimalType(7, 2))
-      .add(" ss_ext_wholesale_cost.decimal(7,2), ", DecimalType(7, 2))
-      .add(" ss_ext_list_price ", DecimalType(7, 2))
-      .add(" ss_ext_tax ", DecimalType(7, 2))
-      .add(" ss_coupon_amt ", DecimalType(7, 2))
-      .add(" ss_net_paid ", DecimalType(7, 2))
-      .add(" ss_net_paid_inc_tax ", DecimalType(7, 2))
-      .add(" ss_net_profit ", DecimalType(7, 2))
+      .add(" ss_wholesale_cost ", DoubleType)
+      .add(" ss_list_price ", DoubleType)
+      .add(" ss_sales_price ", DoubleType)
+      .add(" ss_ext_discount_amt ", DoubleType)
+      .add(" ss_ext_sales_price ", DoubleType)
+      .add(" ss_ext_wholesale_cost, ", DoubleType)
+      .add(" ss_ext_list_price ", DoubleType)
+      .add(" ss_ext_tax ", DoubleType)
+      .add(" ss_coupon_amt ", DoubleType)
+      .add(" ss_net_paid ", DoubleType)
+      .add(" ss_net_paid_inc_tax ", DoubleType)
+      .add(" ss_net_profit ", DoubleType)
   }
   // DecimalType(7, 2) gives defaultSize as 8
 }
@@ -89,11 +89,12 @@ class StoreSalesGenerator(bufferSize:Int) extends RowGenerator{
 
   def nextRow():UnsafeRow = {
     /* we write it once here */
+    unsafeRowWriter.zeroOutNullBytes()
     bufferHolder.reset()
-    var idx = random.nextInt(bufferSize - 8)
+    val idx = random.nextInt(bufferSize - 8)
     val intV = bbx.getInt(idx)
     val longV = bbx.getLong(idx)
-    val doubleV = bbx.getDouble(idx)
+    val doubleV = bbx.getDouble(idx) //Decimal.createUnsafe(bbx.getInt(idx), 7, 2)
 
     unsafeRowWriter.write(0, intV)
     unsafeRowWriter.write(1, intV)
@@ -109,6 +110,7 @@ class StoreSalesGenerator(bufferSize:Int) extends RowGenerator{
     // +9 ints + 1 long
     unsafeRowWriter.write(10, intV)
     // +9 ints + 1 long + 1 int
+    //unsafeRowWriter.write(12, decimalV, 7, 2)
     unsafeRowWriter.write(11, doubleV)
     unsafeRowWriter.write(12, doubleV)
     unsafeRowWriter.write(13, doubleV)
